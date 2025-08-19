@@ -98,4 +98,4 @@ if [ -z "$REMAINING" ]; then
     print_info "Verification: No ServiceEntries remaining in namespace '$NAMESPACE'"
 else
     print_warning "Verification: Some ServiceEntries may still exist: $REMAINING"
-fi
+fi 	
