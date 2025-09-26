@@ -1,0 +1,48 @@
+service:
+  name: Java Microservice
+  identifier: your_microservice_service
+  serviceDefinition:
+    type: Kubernetes
+    spec:
+      manifests:
+        - manifest:
+            identifier: k8s_manifests
+            type: K8sManifest
+            spec:
+              store:
+                type: Git
+                spec:
+                  connectorRef: your_git_connector
+                  gitFetchType: Branch
+                  paths:
+                    - k8s/
+                  repoName: your-microservice-repo
+                  branch: main
+              valuesPaths:
+                - k8s/values.yaml
+              skipResourceVersioning: false
+              enableDeclarativeRollback: false
+      artifacts:
+        primary:
+          spec:
+            connectorRef: your_docker_registry_connector
+            imagePath: your-org/your-microservice
+            tag: <+input>
+          type: DockerRegistry
+      variables:
+        - name: namespace
+          type: String
+          description: Target namespace for deployment
+          required: false
+          value: <+infra.namespace>
+        - name: image_tag
+          type: String
+          description: Docker image tag
+          required: false
+          value: <+artifact.tag>
+        - name: replicas
+          type: String
+          description: Number of replicas
+          required: false
+          value: "3"
+  tags: {}
