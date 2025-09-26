@@ -1,0 +1,29 @@
+# deployment-config.yaml
+# This file controls which release branches are deployed to which integration namespaces
+
+releases:
+  - branch: "release/v1.0"
+    namespace: "integration-v1"
+    environment: "integration_v1_environment"
+    infrastructure: "integration_v1_k8s_infra"
+
+  - branch: "release/v2.0"
+    namespace: "integration-v2"
+    environment: "integration_v2_environment"
+    infrastructure: "integration_v2_k8s_infra"
+
+  - branch: "main"
+    namespace: "integration-main"
+    environment: "integration_main_environment"
+    infrastructure: "integration_main_k8s_infra"
+
+  - branch: "release/hotfix"
+    namespace: "integration-hotfix"
+    environment: "integration_hotfix_environment"
+    infrastructure: "integration_hotfix_k8s_infra"
+
+# Default configuration for new releases
+default:
+  namespace_prefix: "integration-"
+  environment_suffix: "_environment"
+  infrastructure_suffix: "_k8s_infra"
