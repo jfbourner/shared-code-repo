@@ -1,0 +1,21 @@
+
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: tcp-idle-timeout
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: CLUSTER
+      match:
+        context: GATEWAY
+        cluster:
+          service: your-service.your-namespace.svc.cluster.local
+      patch:
+        operation: MERGE
+        value:
+          commonLbConfig:
+            idleTimeout: 180s
