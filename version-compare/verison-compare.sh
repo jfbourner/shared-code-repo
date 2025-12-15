@@ -2,21 +2,29 @@
 
 set -e
 
-GITHUB_HOST="github.com"  # Override this for your GHE instance
+# ===== CONFIGURE THESE =====
+GITHUB_HOST="github.com"           # Your GHE hostname
+GITHUB_ORG="jack"                  # Your GitHub org/user
+OPENSHIFT_URL=""                   # Your OpenShift cluster URL (optional, will prompt if empty)
+# ===========================
 
 usage() {
-    echo "Usage: $0 -n <namespace> -f <csv-file> [-g <github-host>]"
+    echo "Usage: $0 -n <namespace> -f <csv-file> [-g <github-host>] [-o <github-org>] [-c <openshift-url>]"
     echo "  -n  OpenShift namespace"
     echo "  -f  CSV file (format: deployment-name,repo-name)"
-    echo "  -g  GitHub host (default: github.com)"
+    echo "  -g  GitHub host (default: $GITHUB_HOST)"
+    echo "  -o  GitHub org/user (default: $GITHUB_ORG)"
+    echo "  -c  OpenShift cluster URL"
     exit 1
 }
 
-while getopts "n:f:g:" opt; do
+while getopts "n:f:g:o:c:" opt; do
     case $opt in
         n) NAMESPACE="$OPTARG" ;;
         f) CSV_FILE="$OPTARG" ;;
         g) GITHUB_HOST="$OPTARG" ;;
+        o) GITHUB_ORG="$OPTARG" ;;
+        c) OPENSHIFT_URL="$OPTARG" ;;
         *) usage ;;
     esac
 done
@@ -27,11 +35,13 @@ done
 # Check OpenShift login, prompt if needed
 if ! oc whoami &>/dev/null; then
     echo "Not logged into OpenShift. Please login:"
-    read -p "OpenShift URL: " OC_URL
+    if [[ -z "$OPENSHIFT_URL" ]]; then
+        read -p "OpenShift URL: " OPENSHIFT_URL
+    fi
     read -p "Username: " OC_USER
     read -sp "Password: " OC_PASS
     echo
-    oc login "$OC_URL" -u "$OC_USER" -p "$OC_PASS"
+    oc login "$OPENSHIFT_URL" -u "$OC_USER" -p "$OC_PASS"
 fi
 
 # Check gh CLI auth
@@ -60,7 +70,7 @@ while IFS=',' read -r deployment repo || [[ -n "$deployment" ]]; do
     [[ -z "$k8s_version" ]] && k8s_version="NO LABEL"
 
     # Get latest tag from GitHub
-    latest_tag=$(gh api "repos/jack/${repo}/tags" --hostname "$GITHUB_HOST" \
+    latest_tag=$(gh api "repos/${GITHUB_ORG}/${repo}/tags" --hostname "$GITHUB_HOST" \
         --jq '.[0].name' 2>/dev/null || echo "NO TAGS")
 
     [[ -z "$latest_tag" ]] && latest_tag="NO TAGS"
