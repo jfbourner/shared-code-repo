@@ -1,24 +1,24 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: gateway-access-logging
-  namespace: istio-system
+  name: gateway-tcp-access-logging
+  namespace: <your-namespace>
 spec:
   workloadSelector:
     labels:
-      istio: ingressgateway
+      app: istio-ingressgateway
   configPatches:
     - applyTo: NETWORK_FILTER
       match:
         listener:
           filterChain:
             filter:
-              name: "envoy.filters.network.http_connection_manager"
+              name: "envoy.filters.network.tcp_proxy"
       patch:
         operation: MERGE
         value:
           typed_config:
-            "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager"
+            "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy"
             access_log:
               - name: envoy.access_loggers.stdout
                 typed_config:
@@ -26,10 +26,12 @@ spec:
                   log_format:
                     json_format:
                       response_flags: "%RESPONSE_FLAGS%"
+                      bytes_received: "%BYTES_RECEIVED%"
+                      bytes_sent: "%BYTES_SENT%"
+                      downstream_local_address: "%DOWNSTREAM_LOCAL_ADDRESS%"
+                      downstream_remote_address: "%DOWNSTREAM_REMOTE_ADDRESS%"
                       tls_version: "%DOWNSTREAM_TLS_VERSION%"
                       tls_cipher: "%DOWNSTREAM_TLS_CIPHER%"
                       client_cert_subject: "%DOWNSTREAM_PEER_SUBJECT%"
                       client_cert_issuer: "%DOWNSTREAM_PEER_ISSUER%"
-                      client_cert_san: "%DOWNSTREAM_PEER_URI_SAN%"
-                      client_cert_serial: "%DOWNSTREAM_PEER_SERIAL%"
-                      response_code: "%RESPONSE_CODE%"
+                      connection_termination_details: "%CONNECTION_TERMINATION_DETAILS%"
