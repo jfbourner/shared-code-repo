@@ -1,0 +1,35 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: gateway-access-logging
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: NETWORK_FILTER
+      match:
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
+      patch:
+        operation: MERGE
+        value:
+          typed_config:
+            "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager"
+            access_log:
+              - name: envoy.access_loggers.stdout
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                  log_format:
+                    json_format:
+                      response_flags: "%RESPONSE_FLAGS%"
+                      tls_version: "%DOWNSTREAM_TLS_VERSION%"
+                      tls_cipher: "%DOWNSTREAM_TLS_CIPHER%"
+                      client_cert_subject: "%DOWNSTREAM_PEER_SUBJECT%"
+                      client_cert_issuer: "%DOWNSTREAM_PEER_ISSUER%"
+                      client_cert_san: "%DOWNSTREAM_PEER_URI_SAN%"
+                      client_cert_serial: "%DOWNSTREAM_PEER_SERIAL%"
+                      response_code: "%RESPONSE_CODE%"

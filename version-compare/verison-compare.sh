@@ -70,11 +70,11 @@ while IFS=',' read -r deployment repo || [[ -n "$deployment" ]]; do
 
     [[ -z "$k8s_version" ]] && k8s_version="NO LABEL"
 
-    # Get latest tag from GitHub (filtered by semantic version pattern)
-    # Matches: 1.0, 1.0-RC, 1.0.0, 1.0.0-RC, etc.
+    # Get latest tag from GitHub (filtered by semantic version pattern, excluding RC)
+    # Matches: 1.0, 1.0.0, etc. (no -RC suffix)
     latest_tag=$(gh api "repos/${GITHUB_ORG}/${repo}/tags" --hostname "$GITHUB_HOST" \
         --jq '.[].name' 2>/dev/null \
-        | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?(-RC)?$' \
+        | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?$' \
         | sort -V \
         | tail -1)
 
