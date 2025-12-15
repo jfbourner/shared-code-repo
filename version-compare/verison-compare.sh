@@ -6,6 +6,7 @@ set -e
 GITHUB_HOST="github.com"           # Your GHE hostname
 GITHUB_ORG="jack"                  # Your GitHub org/user
 OPENSHIFT_URL=""                   # Your OpenShift cluster URL (optional, will prompt if empty)
+USERNAME_SUFFIX="@test.account"    # Suffix appended to username (e.g. @test.account)
 # ===========================
 
 usage() {
@@ -41,7 +42,7 @@ if ! oc whoami &>/dev/null; then
     read -p "Username: " OC_USER
     read -sp "Password: " OC_PASS
     echo
-    oc login "$OPENSHIFT_URL" -u "$OC_USER" -p "$OC_PASS"
+    oc login "$OPENSHIFT_URL" -u "${OC_USER}${USERNAME_SUFFIX}" -p "$OC_PASS"
 fi
 
 # Check gh CLI auth
@@ -69,9 +70,13 @@ while IFS=',' read -r deployment repo || [[ -n "$deployment" ]]; do
 
     [[ -z "$k8s_version" ]] && k8s_version="NO LABEL"
 
-    # Get latest tag from GitHub
+    # Get latest tag from GitHub (filtered by semantic version pattern)
+    # Matches: 1.0, 1.0-RC, 1.0.0, 1.0.0-RC, etc.
     latest_tag=$(gh api "repos/${GITHUB_ORG}/${repo}/tags" --hostname "$GITHUB_HOST" \
-        --jq '.[0].name' 2>/dev/null || echo "NO TAGS")
+        --jq '.[].name' 2>/dev/null \
+        | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?(-RC)?$' \
+        | sort -V \
+        | tail -1)
 
     [[ -z "$latest_tag" ]] && latest_tag="NO TAGS"
 
