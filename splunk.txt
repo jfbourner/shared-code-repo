@@ -1,0 +1,19 @@
+index=your_index (sourcetype=kafka_request OR sourcetype=kafka_response)
+| spath input=_raw
+| eval payment_id=spath(_raw, "data.payment.id")
+| eval event_timestamp=spath(_raw, "timestamp")
+| eval topic=case(
+    sourcetype="kafka_request", "request",
+    sourcetype="kafka_response", "response"
+)
+| stats
+    earliest(event_timestamp) as request_time by payment_id, topic
+| eval request_time=if(topic="request", request_time, null())
+| eval response_time=if(topic="response", request_time, null())
+| stats
+    values(request_time) as request_time
+    values(response_time) as response_time
+    by payment_id
+| eval time_diff_seconds = (strptime(response_time, "%Y-%m-%dT%H:%M:%S.%3N") - strptime(request_time, "%Y-%m-%dT%H:%M:%S.%3N"))
+| eval time_diff_ms = time_diff_seconds * 1000
+| table payment_id, request_time, response_time, time_diff_ms
