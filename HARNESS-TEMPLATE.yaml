@@ -1,0 +1,214 @@
+template:
+  name: Liquibase Database Migration
+  identifier: liquibase_migration_template
+  versionLabel: v1.0.0
+  type: Pipeline
+  orgIdentifier: YOUR_ORG  # Org-level for cross-project sharing
+  tags:
+    category: database
+    tool: liquibase
+  spec:
+    stages:
+      - stage:
+          name: Database Migration
+          identifier: database_migration
+          type: CI
+          spec:
+            cloneCodebase: true
+            infrastructure:
+              type: KubernetesDirect
+              spec:
+                connectorRef: <+input>  # Teams provide their K8s connector
+                namespace: <+input>.default(harness-builds)
+            execution:
+              steps:
+                - step:
+                    type: Run
+                    name: Generate SQL Preview
+                    identifier: generate_sql
+                    spec:
+                      connectorRef: <+input>  # Teams provide their GCP connector
+                      image: <+input>.default(your-registry/maven-cloudsql:latest)
+                      shell: Bash
+                      command: |
+                        cloud-sql-proxy <+stage.variables.cloudsql_connection> --port=5432 &
+                        sleep 5
+                        
+                        mvn liquibase:updateSQL \
+                          -Dliquibase.url="jdbc:postgresql://localhost:5432/<+stage.variables.database_name>" \
+                          -Dliquibase.username="<+stage.variables.db_user>" \
+                          -Dliquibase.password="" \
+                          -Dliquibase.outputFile=/harness/migration.sql
+                        
+                        echo "=== Generated SQL ==="
+                        cat /harness/migration.sql
+                        
+                        cp /harness/migration.sql /harness/outputs/migration.sql
+
+                - step:
+                    type: HarnessApproval
+                    name: Review SQL Changes
+                    identifier: review_sql
+                    spec:
+                      approvalMessage: <+input>.default("Please review the SQL changes")
+                      approvers:
+                        userGroups: <+input>  # Teams specify their approval group
+                        minimumCount: 1
+                      timeout: <+input>.default(1d)
+
+                - step:
+                    type: Run
+                    name: Apply Database Changes
+                    identifier: apply_changes
+                    spec:
+                      connectorRef: <+input>
+                      image: <+input>.default(your-registry/maven-cloudsql:latest)
+                      shell: Bash
+                      command: |
+                        cloud-sql-proxy <+stage.variables.cloudsql_connection> --port=5432 &
+                        sleep 5
+                        
+                        mvn liquibase:update \
+                          -Dliquibase.url="jdbc:postgresql://localhost:5432/<+stage.variables.database_name>" \
+                          -Dliquibase.username="<+stage.variables.db_user>" \
+                          -Dliquibase.password=""
+
+                - step:
+                    type: Run
+                    name: Tag Database
+                    identifier: tag_database
+                    spec:
+                      connectorRef: <+input>
+                      image: <+input>.default(your-registry/maven-cloudsql:latest)
+                      shell: Bash
+                      command: |
+                        cloud-sql-proxy <+stage.variables.cloudsql_connection> --port=5432 &
+                        sleep 5
+                        
+                        TAG_NAME="$(date +%Y%m%d%H%M)"
+                        
+                        mvn liquibase:tag \
+                          -Dliquibase.url="jdbc:postgresql://localhost:5432/<+stage.variables.database_name>" \
+                          -Dliquibase.username="<+stage.variables.db_user>" \
+                          -Dliquibase.password="" \
+                          -Dliquibase.tag="${TAG_NAME}"
+
+            # Stage variables that teams customize
+            variables:
+              - name: cloudsql_connection
+                type: String
+                description: "GCP Cloud SQL connection string (project:region:instance)"
+                value: <+input>
+              - name: database_name
+                type: String
+                description: "PostgreSQL database name"
+                value: <+input>
+              - name: db_user
+                type: String
+                description: "Database username (service account name)"
+                value: <+input>
+
+template:
+  name: Liquibase Migration Stage
+  identifier: liquibase_stage
+  versionLabel: v1.0.0
+  type: Stage
+  orgIdentifier: YOUR_ORG
+  spec:
+    type: CI
+    spec:
+      cloneCodebase: true
+      infrastructure:
+        type: KubernetesDirect
+        spec:
+          connectorRef: <+input>
+          namespace: <+input>.default(harness-builds)
+      execution:
+        steps:
+          - step:
+              type: Run
+              name: Liquibase Command
+              identifier: liquibase_cmd
+              spec:
+                connectorRef: <+input>
+                image: <+input>.default(your-registry/maven-cloudsql:latest)
+                shell: Bash
+                command: |
+                  cloud-sql-proxy <+stage.variables.cloudsql_connection> --port=5432 &
+                  sleep 5
+                  
+                  # Run the Liquibase command passed as variable
+                  mvn liquibase:<+stage.variables.liquibase_command> \
+                    -Dliquibase.url="jdbc:postgresql://localhost:5432/<+stage.variables.database_name>" \
+                    -Dliquibase.username="<+stage.variables.db_user>" \
+                    -Dliquibase.password="" \
+                    <+stage.variables.extra_args>
+
+      variables:
+        - name: cloudsql_connection
+          type: String
+          value: <+input>
+        - name: database_name
+          type: String
+          value: <+input>
+        - name: db_user
+          type: String
+          value: <+input>
+        - name: liquibase_command
+          type: String
+          description: "Liquibase goal: update, updateSQL, validate, rollback, etc."
+          value: <+input>.default(update)
+        - name: extra_args
+          type: String
+          value: <+input>.default("")
+
+pipeline:
+  name: Payments DB Migration
+  identifier: payments_db_migration
+  projectIdentifier: payments_team
+  orgIdentifier: YOUR_ORG
+
+  # Use the template
+  template:
+    templateRef: liquibase_migration_template
+    versionLabel: v1.0.0
+
+    # Provide team-specific inputs
+    templateInputs:
+      stages:
+        - stage:
+            identifier: database_migration
+            spec:
+              infrastructure:
+                spec:
+                  connectorRef: payments_k8s_connector
+                  namespace: payments-builds
+              execution:
+                steps:
+                  - step:
+                      identifier: generate_sql
+                      spec:
+                        connectorRef: payments_gcp_connector
+                        image: my-registry/maven-cloudsql:latest
+                  - step:
+                      identifier: review_sql
+                      spec:
+                        approvers:
+                          userGroups:
+                            - payments_db_approvers
+                  - step:
+                      identifier: apply_changes
+                      spec:
+                        connectorRef: payments_gcp_connector
+                  - step:
+                      identifier: tag_database
+                      spec:
+                        connectorRef: payments_gcp_connector
+
+              variables:
+                - name: cloudsql_connection
+                  value: my-project:europe-west2:payments-db-instance
+                - name: database_name
+                  value: payments_prod
+                - name: db_user
+                  value: payments-sa
