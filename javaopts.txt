@@ -1,2 +1,4 @@
 JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0 -XX:MaxMetaspaceSize=512m -XX:+ExitOnOutOfMemoryError"
 java -XX:+PrintFlagsFinal -version 2>&1 | grep -E "MaxHeapSize|MaxRAM|UseContainerSupport"
+- name: JAVA_OPTS
+          value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.
