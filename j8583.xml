@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<j8583-config>
+
+    <!-- ISO header associated with message type 0200 -->
+    <header type="0200">ISO015000050</header>
+    <header type="0210">ISO015000050</header>
+
+    <!--
+        Parsing template for 0200 (Financial Transaction Request).
+        Every field that could appear in the bitmap MUST be listed here.
+        Types: NUMERIC, ALPHA, LLVAR, LLLVAR, AMOUNT, DATE10, DATE4, DATE_EXP, TIME, BINARY, LLBIN, LLLBIN
+        length is mandatory for fixed-length types (NUMERIC, ALPHA, AMOUNT, BINARY),
+        ignored for variable-length types (LLVAR, LLLVAR etc).
+    -->
+    <parse type="0200">
+        <field num="2"  type="LLVAR"   />                  <!-- PAN -->
+        <field num="3"  type="NUMERIC" length="6"  />      <!-- Processing Code -->
+        <field num="4"  type="NUMERIC" length="12" />      <!-- Transaction Amount -->
+        <field num="7"  type="DATE10"  />                  <!-- Transmission Date & Time -->
+        <field num="11" type="NUMERIC" length="6"  />      <!-- STAN -->
+        <field num="12" type="TIME"    />                  <!-- Local Transaction Time -->
+        <field num="13" type="DATE4"   />                  <!-- Local Transaction Date -->
+        <field num="22" type="NUMERIC" length="3"  />      <!-- POS Entry Mode -->
+        <field num="32" type="LLVAR"   />                  <!-- Acquiring Institution ID -->
+        <field num="37" type="ALPHA"   length="12" />      <!-- Retrieval Reference Number -->
+        <field num="41" type="ALPHA"   length="8"  />      <!-- Card Acceptor Terminal ID -->
+        <field num="42" type="ALPHA"   length="15" />      <!-- Card Acceptor ID -->
+        <field num="43" type="ALPHA"   length="40" />      <!-- Card Acceptor Name/Location -->
+        <field num="49" type="NUMERIC" length="3"  />      <!-- Currency Code -->
+        <field num="52" type="BINARY"  length="8"  />      <!-- PIN Data -->
+        <field num="55" type="LLLBIN"  />                  <!-- EMV Data -->
+        <field num="102" type="LLVAR"  />                  <!-- Account ID 1 (Faster Payments: sort/account) -->
+    </parse>
+
+    <!-- Response parsing template -->
+    <parse type="0210">
+        <field num="2"  type="LLVAR"   />
+        <field num="3"  type="NUMERIC" length="6"  />
+        <field num="4"  type="NUMERIC" length="12" />
+        <field num="7"  type="DATE10"  />
+        <field num="11" type="NUMERIC" length="6"  />
+        <field num="37" type="ALPHA"   length="12" />
+        <field num="38" type="ALPHA"   length="6"  />      <!-- Authorisation Code -->
+        <field num="39" type="ALPHA"   length="2"  />      <!-- Response Code -->
+        <field num="41" type="ALPHA"   length="8"  />
+        <field num="49" type="NUMERIC" length="3"  />
+    </parse>
+
+</j8583-config>
