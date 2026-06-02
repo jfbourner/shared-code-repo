@@ -1,0 +1,24 @@
+index="ent_payments_npa_fps"
+    kafka_topic IN ("a","b","c")
+    eventSource!="payment-saas-gateway-fps-outbound-sip"
+| rename "record.key" AS record_key
+| eval mac_version='data.metadata.macGeneratedKeyVersion'
+| eval _time_main=_time
+| fields record_key, mac_version, _time_main
+
+| append
+    [search index=lbg_payments_fpg_ocp_logs
+        kubernetes.container_name="fpg-lineinterface-x"
+        kubernetes.pod_name=*
+    | rename "record.key" AS record_key
+    | rename "kubernetes.pod_name" AS pod_name
+    | fields record_key, pod_name]
+
+| stats
+    max(_time_main) AS _time
+    max(mac_version) AS mac_version
+    max(pod_name) AS pod_name
+    by record_key
+
+| eval name_version = pod_name + "_" + mac_version
+| timechart span=1h count by name_version
