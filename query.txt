@@ -20,5 +20,12 @@ index="ent_payments_npa_fps"
     max(pod_name) AS pod_name
     by record_key
 
-| eval name_version = pod_name + "_" + mac_version
-| timechart span=1h count by name_version
+| sort _time
+| streamstats window=1 current=false last(mac_version) AS prev_version by pod_name
+| eval version_changed = case(
+    isnull(prev_version),         "first seen",
+    mac_version != prev_version,  "CHANGED",
+    true(),                       "unchanged"
+  )
+| where version_changed="CHANGED" OR version_changed="first seen"
+| table _time, pod_name, prev_version, mac_version, version_changed
