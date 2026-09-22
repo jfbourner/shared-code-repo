@@ -6,3 +6,8 @@ launchctl getenv JAVA_HOME
 
 launchctl setenv JAVA_HOME "$HOME/.sdkman/candidates/java/current"
 launchctl setenv PATH "$HOME/.sdkman/candidates/maven/current/bin:$HOME/.sdkman/candidates/java/current/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+#!/bin/bash
+export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+export PATH="$HOME/.sdkman/candidates/maven/current/bin:$JAVA_HOME/bin:$PATH"
+open -a "/Applications/YourApp.app"
