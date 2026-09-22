@@ -7,7 +7,28 @@ launchctl getenv JAVA_HOME
 launchctl setenv JAVA_HOME "$HOME/.sdkman/candidates/java/current"
 launchctl setenv PATH "$HOME/.sdkman/candidates/maven/current/bin:$HOME/.sdkman/candidates/java/current/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
+launchctl setenv JAVA_HOME "$(/usr/libexec/java_home)"
+launchctl setenv PATH "$HOME/.sdkman/candidates/java/current/bin:$HOME/.sdkman/candidates/maven/current/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 #!/bin/bash
 export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
 export PATH="$HOME/.sdkman/candidates/maven/current/bin:$JAVA_HOME/bin:$PATH"
 open -a "/Applications/YourApp.app"
+
+~/Library/LaunchAgents/setenv.sdkman.plist
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>setenv.sdkman</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>launchctl setenv PATH "$HOME/.sdkman/candidates/java/current/bin:$HOME/.sdkman/candidates/maven/current/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin"; launchctl setenv JAVA_HOME "$HOME/.sdkman/candidates/java/current"</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+</dict>
+</plist>
+launchctl load ~/Library/LaunchAgents/setenv.sdkman.plist
