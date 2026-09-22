@@ -1,1 +1,5 @@
 sudo ln -sfn "$(brew --prefix openjdk@21)/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk-21.jdk
+
+launchctl config user path "$HOME/.sdkman/candidates/maven/current/bin:$HOME/.sdkman/candidates/java/current/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+launchctl setenv JAVA_HOME "$HOME/.sdkman/candidates/java/current"
+launchctl getenv JAVA_HOME
